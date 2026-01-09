@@ -117,7 +117,7 @@
         // 1) No "Content-Type" header -> avoids CORS preflight issues with Apps Script
         // 2) Service worker is written to ignore POST (so it won't break this)
         const r = await fetch(
-          "https://script.google.com/macros/s/AKfycby3wzKA_A83JBM2YIM1g7nmQx3BOssWzL-UlSGQrCbX1xHZ6AecwFEM-4eVOz0GDV9cpw/exec",
+          "https://script.google.com/macros/s/AKfycbxWb7kDqHxP5Kss4IF0ywl7h_MRVsYDPCjXpWVzXx_a4uOXSrYDXEIlw-KQ9MZoU4te5w/exec",
           {
             method: "POST",
             body: JSON.stringify(data)
@@ -143,3 +143,4 @@
   </script>
 </body>
 </html>
+
