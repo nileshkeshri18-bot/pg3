@@ -6,7 +6,7 @@
 
   <title>Playground Booking</title>
 
-  <!-- PWA manifest -->
+  <!-- PWA: Manifest + theme color -->
   <link rel="manifest" href="/pg3/app.webmanifest" />
   <meta name="theme-color" content="#1e8449" />
 
@@ -22,8 +22,11 @@
       margin: 40px auto;
       background: white;
       padding: 20px;
-      border-radius: 6px;
+      border-radius: 8px;
       box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    h3 {
+      margin-top: 0;
     }
     label {
       font-weight: bold;
@@ -38,8 +41,12 @@
       border: 1px solid #ddd;
       border-radius: 6px;
       font-size: 14px;
+      outline: none;
     }
-    textarea { min-height: 80px; resize: vertical; }
+    textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
     button {
       margin-top: 15px;
       width: 100%;
@@ -55,11 +62,15 @@
       opacity: 0.6;
       cursor: not-allowed;
     }
-    #msg { margin-top: 12px; }
+    #msg {
+      margin-top: 12px;
+      font-weight: bold;
+    }
   </style>
 </head>
 
 <body>
+
   <div class="box">
     <h3>Playground Booking</h3>
 
@@ -89,7 +100,7 @@
   </div>
 
   <script>
-    // Register Service Worker (PWA)
+    // PWA: Register Service Worker
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/pg3/service-worker.js");
     }
@@ -116,23 +127,31 @@
       msg.innerText = "Submitting...";
 
       try {
+        // IMPORTANT:
+        // Do NOT add Content-Type header here, to avoid CORS preflight issues with Apps Script.
         const r = await fetch("https://script.google.com/macros/s/AKfycby3wzKA_A83JBM2YIM1g7nmQx3BOssWzL-UlSGQrCbX1xHZ6AecwFEM-4eVOz0GDV9cpw/exec", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data)
         });
 
         const resText = await r.text();
-        // Even if you don't use resText, reading it helps debugging
+        console.log("Server response:", resText);
 
         msg.innerText = "✅ Submitted successfully";
+
+        // Optional: clear inputs after success
+        document.getElementById("name").value = "";
+        document.getElementById("contact").value = "";
+        document.getElementById("remarks").value = "";
+
       } catch (err) {
-        msg.innerText = "❌ Submission failed";
         console.log(err);
+        msg.innerText = "❌ Submission failed";
       } finally {
         btn.disabled = false;
       }
     }
   </script>
+
 </body>
 </html>
