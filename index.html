@@ -11,50 +11,24 @@
   <meta name="theme-color" content="#1e8449">
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      margin: 0;
-      padding: 0;
-    }
+    body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; padding:0; }
     .box {
-      max-width: 420px;
-      margin: 40px auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      max-width: 420px; margin: 40px auto; background:#fff; padding:20px;
+      border-radius:10px; box-shadow:0 2px 12px rgba(0,0,0,0.08);
     }
-    h3 { margin: 0 0 10px; }
-    label {
-      font-weight: bold;
-      display: block;
-      margin-top: 12px;
-    }
+    h3 { margin:0 0 10px; }
+    label { font-weight:bold; display:block; margin-top:12px; }
     input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 6px;
-      box-sizing: border-box;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-size: 14px;
-      outline: none;
+      width:100%; padding:10px; margin-top:6px; box-sizing:border-box;
+      border:1px solid #ddd; border-radius:8px; font-size:14px; outline:none;
     }
-    textarea { min-height: 80px; resize: vertical; }
+    textarea { min-height:80px; resize:vertical; }
     button {
-      margin-top: 16px;
-      width: 100%;
-      padding: 12px;
-      background: #1e8449;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 15px;
-      cursor: pointer;
+      margin-top:16px; width:100%; padding:12px; background:#1e8449; color:#fff;
+      border:none; border-radius:8px; font-size:15px; cursor:pointer;
     }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-    #msg { margin-top: 12px; font-weight: bold; }
+    button:disabled { opacity:0.6; cursor:not-allowed; }
+    #msg { margin-top:12px; font-weight:bold; }
   </style>
 </head>
 
@@ -62,28 +36,34 @@
   <div class="box">
     <h3>Playground Booking</h3>
 
-    <label>Name</label>
-    <input id="name" placeholder="Enter name" />
+    <!-- Hidden iframe to submit without leaving the page -->
+    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
 
-    <label>Contact</label>
-    <input id="contact" placeholder="Phone number" />
+    <!-- Form submits directly to Apps Script (avoids CORS issues) -->
+    <form id="bookingForm" target="hidden_iframe" method="POST">
+      <label>Name</label>
+      <input id="name" name="name" placeholder="Enter name" required />
 
-    <label>Date</label>
-    <input type="date" id="date" />
+      <label>Contact</label>
+      <input id="contact" name="contact" placeholder="Phone number" required />
 
-    <label>Slot</label>
-    <select id="slot">
-      <option>7 AM - 9 AM</option>
-      <option>9 AM - 11 AM</option>
-      <option>11 AM - 1 PM</option>
-      <option>1 PM - 3 PM</option>
-    </select>
+      <label>Date</label>
+      <input type="date" id="date" name="date" required />
 
-    <label>Remarks</label>
-    <textarea id="remarks" placeholder="Optional"></textarea>
+      <label>Slot</label>
+      <select id="slot" name="slot">
+        <option>7 AM - 9 AM</option>
+        <option>9 AM - 11 AM</option>
+        <option>11 AM - 1 PM</option>
+        <option>1 PM - 3 PM</option>
+      </select>
 
-    <button id="btn" onclick="send()">Submit</button>
-    <p id="msg"></p>
+      <label>Remarks</label>
+      <textarea id="remarks" name="remarks" placeholder="Optional"></textarea>
+
+      <button id="btn" type="submit">Submit</button>
+      <p id="msg"></p>
+    </form>
   </div>
 
   <script>
@@ -92,55 +72,49 @@
       navigator.serviceWorker.register("/pg3/service-worker.js");
     }
 
-    async function send() {
-      const btn = document.getElementById("btn");
-      const msg = document.getElementById("msg");
+    // ✅ Your NEW Apps Script URL:
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWb7kDqHxP5Kss4IF0ywl7h_MRVsYDPCjXpWVzXx_a4uOXSrYDXEIlw-KQ9MZoU4te5w/exec";
 
-      const data = {
-        name: document.getElementById("name").value.trim(),
-        contact: document.getElementById("contact").value.trim(),
-        date: document.getElementById("date").value,
-        slot: document.getElementById("slot").value,
-        remarks: document.getElementById("remarks").value.trim()
-      };
+    const form = document.getElementById("bookingForm");
+    const btn = document.getElementById("btn");
+    const msg = document.getElementById("msg");
+    const iframe = document.getElementById("hidden_iframe");
 
-      if (!data.name || !data.contact || !data.date) {
+    // Set the form action
+    form.action = SCRIPT_URL;
+
+    let submitted = false;
+
+    form.addEventListener("submit", function (e) {
+      const name = document.getElementById("name").value.trim();
+      const contact = document.getElementById("contact").value.trim();
+      const date = document.getElementById("date").value;
+
+      if (!name || !contact || !date) {
+        e.preventDefault();
         msg.innerText = "❌ Please fill Name, Contact and Date";
         return;
       }
 
+      submitted = true;
       btn.disabled = true;
       msg.innerText = "Submitting...";
+      // allow form submit to iframe
+    });
 
-      try {
-        // IMPORTANT:
-        // 1) No "Content-Type" header -> avoids CORS preflight issues with Apps Script
-        // 2) Service worker is written to ignore POST (so it won't break this)
-        const r = await fetch(
-          "https://script.google.com/macros/s/AKfycbxWb7kDqHxP5Kss4IF0ywl7h_MRVsYDPCjXpWVzXx_a4uOXSrYDXEIlw-KQ9MZoU4te5w/exec",
-          {
-            method: "POST",
-            body: JSON.stringify(data)
-          }
-        );
+    // When iframe loads after submission, show success
+    iframe.addEventListener("load", function () {
+      if (!submitted) return;
 
-        const t = await r.text();
-        console.log("Server response:", t);
+      submitted = false;
+      btn.disabled = false;
+      msg.innerText = "✅ Submitted successfully (check your Sheet)";
 
-        msg.innerText = "✅ Submitted successfully";
-
-        // Optional: clear after success
-        document.getElementById("name").value = "";
-        document.getElementById("contact").value = "";
-        document.getElementById("remarks").value = "";
-      } catch (err) {
-        console.log(err);
-        msg.innerText = "❌ Submission failed";
-      } finally {
-        btn.disabled = false;
-      }
-    }
+      // clear some fields
+      document.getElementById("name").value = "";
+      document.getElementById("contact").value = "";
+      document.getElementById("remarks").value = "";
+    });
   </script>
 </body>
 </html>
-
