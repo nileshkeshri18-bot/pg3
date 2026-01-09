@@ -1,98 +1,138 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>Playground Booking</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
-        }
-        .box {
-            max-width: 400px;
-            margin: 40px auto;
-            background: white;
-            padding: 20px;
-            border-radius: 6px;
-        }
-        label {
-            font-weight: bold;
-            display: block;
-            margin-top: 10px;
-        }
-        input, select, textarea {
-            width: 100%;
-            padding: 7px;
-            margin-top: 4px;
-        }
-        button {
-            margin-top: 15px;
-            width: 100%;
-            padding: 10px;
-            background: #1e8449;
-            color: white;
-            border: none;
-        }
-    </style>
+  <title>Playground Booking</title>
+
+  <!-- PWA manifest -->
+  <link rel="manifest" href="/pg3/app.webmanifest" />
+  <meta name="theme-color" content="#1e8449" />
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+    }
+    .box {
+      max-width: 400px;
+      margin: 40px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 6px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      box-sizing: border-box;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    textarea { min-height: 80px; resize: vertical; }
+    button {
+      margin-top: 15px;
+      width: 100%;
+      padding: 12px;
+      background: #1e8449;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    #msg { margin-top: 12px; }
+  </style>
 </head>
 
 <body>
-
-<div class="box">
+  <div class="box">
     <h3>Playground Booking</h3>
 
     <label>Name</label>
-    <input id="name">
+    <input id="name" placeholder="Enter name" />
 
     <label>Contact</label>
-    <input id="contact">
+    <input id="contact" placeholder="Phone number" />
 
     <label>Date</label>
-    <input type="date" id="date">
+    <input type="date" id="date" />
 
     <label>Slot</label>
     <select id="slot">
-        <option>7 AM - 9 AM</option>
-        <option>9 AM - 11 AM</option>
-        <option>11 AM - 1 PM</option>
-        <option>1 PM - 3 PM</option>
+      <option>7 AM - 9 AM</option>
+      <option>9 AM - 11 AM</option>
+      <option>11 AM - 1 PM</option>
+      <option>1 PM - 3 PM</option>
     </select>
 
     <label>Remarks</label>
-    <textarea id="remarks"></textarea>
+    <textarea id="remarks" placeholder="Optional"></textarea>
 
-    <button onclick="send()">Submit</button>
+    <button id="btn" onclick="send()">Submit</button>
 
     <p id="msg"></p>
-</div>
+  </div>
 
-<script>
-function send() {
+  <script>
+    // Register Service Worker (PWA)
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/pg3/service-worker.js");
+    }
 
-    var data = {
-        name: document.getElementById("name").value,
-        contact: document.getElementById("contact").value,
+    async function send() {
+      const btn = document.getElementById("btn");
+      const msg = document.getElementById("msg");
+
+      const data = {
+        name: document.getElementById("name").value.trim(),
+        contact: document.getElementById("contact").value.trim(),
         date: document.getElementById("date").value,
         slot: document.getElementById("slot").value,
-        remarks: document.getElementById("remarks").value
-    };
+        remarks: document.getElementById("remarks").value.trim()
+      };
 
-    fetch("https://script.google.com/macros/s/AKfycby3wzKA_A83JBM2YIM1g7nmQx3BOssWzL-UlSGQrCbX1xHZ6AecwFEM-4eVOz0GDV9cpw/exec", {
-        method: "POST",
-        body: JSON.stringify(data)
-    })
-    .then(r => r.text())
-    .then(res => {
-        document.getElementById("msg").innerText =
-            "✅ Submitted successfully";
-    })
-    .catch(err => {
-        document.getElementById("msg").innerText =
-            "❌ Submission failed";
-    });
-}
-</script>
+      // Basic validation
+      if (!data.name || !data.contact || !data.date) {
+        msg.innerText = "❌ Please fill Name, Contact and Date";
+        return;
+      }
 
+      btn.disabled = true;
+      msg.innerText = "Submitting...";
+
+      try {
+        const r = await fetch("https://script.google.com/macros/s/AKfycby3wzKA_A83JBM2YIM1g7nmQx3BOssWzL-UlSGQrCbX1xHZ6AecwFEM-4eVOz0GDV9cpw/exec", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+
+        const resText = await r.text();
+        // Even if you don't use resText, reading it helps debugging
+
+        msg.innerText = "✅ Submitted successfully";
+      } catch (err) {
+        msg.innerText = "❌ Submission failed";
+        console.log(err);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
 </body>
 </html>
